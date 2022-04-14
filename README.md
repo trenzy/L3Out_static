@@ -20,7 +20,7 @@ It makes a few assumptions:
 
 - This L3Out was created in the common Tenant, but this can be used anywhere.
 - Some of the options should be changed to reflect the type of L3Out you want to deploy - external subnet scope, route control, etc.
-- This playbook uses an SVI interface, but can be changed to use a direct interface, port channe;, etc.
+- This playbook uses an SVI interface, but can be changed to use a direct interface, port channel, etc.
 - The contract for the External EPG was previously created.
 - That you have created the associated objects such as VRF, Application Profiles, EPGs, and Fabric access policies.
 - The associated domain has already been configured under the EPG.
