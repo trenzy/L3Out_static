@@ -1,0 +1,139 @@
+# Create a new L3Out that will use static routing to get to it's next hop
+# for a particular prefix. 
+#
+---
+- name: Configure an L3Out with static routing
+  hosts: apic
+  connection: local
+  gather_facts: false
+
+  # Anchor for login information
+  vars:
+    aci_info: &aci_info
+      hostname: '{{ inventory_hostname }}'
+      username: '{{ username }}'
+      password: '{{ password }}'
+    tenant: common
+    L3Out: L3Out_static
+    node_prof: L3Out_static_node_prof 
+    int_prof: L3Out_static_int_Profile
+
+  tasks:
+    - name: Create L3Out
+      cisco.aci.aci_l3out:
+        <<: *aci_info
+        tenant: '{{ tenant }}'
+        name: '{{ L3Out }}' 
+        description: L3Out created by Ansible
+        domain: L3_DOM
+        vrf: vrf1
+        l3protocol: static
+        validate_certs: no
+        state: present
+
+    - name: Create a new node profile
+      cisco.aci.aci_l3out_logical_node_profile:
+        <<: *aci_info
+        tenant: '{{ tenant }}'
+        l3out: '{{ L3Out }}'
+        node_profile: '{{ node_prof }}'
+        description: node profile for L3Out - Ansible
+        validate_certs: no
+        state: present
+
+    - name: Add a node to a node profile
+      cisco.aci.aci_l3out_logical_node:
+        <<: *aci_info
+        tenant: '{{ tenant }}'
+        l3out: '{{ L3Out }}'
+        node_profile: '{{ node_prof }}'
+        pod_id: 1
+        node_id: 201
+        router_id: 10.20.30.40
+        router_id_as_loopback: yes
+        validate_certs: no
+        state: present
+
+    - name: Create a new interface profile
+      cisco.aci.aci_l3out_logical_interface_profile:
+        <<: *aci_info
+        tenant: '{{ tenant }}'
+        l3out: '{{ L3Out }}'
+        node_profile: '{{ node_prof }}'
+        interface_profile: '{{ int_prof }}'
+        validate_certs: no
+        state: present
+
+    - name: Create an SVI routed interface
+      cisco.aci.aci_l3out_interface:
+        <<: *aci_info
+        tenant: '{{ tenant }}'
+        l3out: '{{ L3Out }}'
+        node_profile: '{{ node_prof }}'
+        interface_profile: '{{ int_prof }}'
+        pod_id: 1
+        node_id: 201
+        path_ep: eth1/3
+        interface_type: ext-svi
+        encap: vlan-1373
+        addr: 10.128.8.100/28
+        validate_certs: no
+        state: present
+
+    - name: Add a new External Epg
+      cisco.aci.aci_l3out_extepg:
+        <<: *aci_info
+        tenant: '{{ tenant }}'
+        l3out: '{{ L3Out }}'
+        name: ext-epg
+        description: Put something descriptive here
+        validate_certs: no
+        state: present
+
+    - name: Bind a contract to the External EPG
+      cisco.aci.aci_l3out_extepg_to_contract:
+        <<: *aci_info
+        tenant: '{{ tenant }}'
+        l3out: '{{ L3Out }}'
+        extepg : ext-epg
+        contract: permit-any
+        contract_type: provider
+        validate_certs: no
+        state: present
+
+    - name: Add an External Subnet
+      cisco.aci.aci_l3out_extsubnet:
+        <<: *aci_info
+        tenant: '{{ tenant }}'
+        l3out: '{{ L3Out }}'
+        extepg: ext-epg
+        description: Put something descriptive here
+        network: 0.0.0.0/0
+        scope: import-security
+        validate_certs: no
+        state: present
+
+    - name: Create a static route
+      cisco.aci.aci_l3out_static_routes:
+        <<: *aci_info
+        tenant: '{{ tenant }}'
+        l3out: '{{ L3Out }}'
+        logical_node: '{{ node_prof }}'
+        node_id: 201
+        pod_id: 1
+        prefix: 172.31.13.0/20
+        validate_certs: no
+        state: present
+
+    - name: Add a next hop for the static route we created
+      cisco.aci.aci_l3out_static_routes_nexthop:
+        <<: *aci_info
+        tenant: '{{ tenant }}'
+        l3out: '{{ L3Out }}'
+        node_profile: '{{ node_prof }}'
+        pod_id: 1
+        node_id: 201
+        prefix: 172.31.13.0/20
+        nexthop: 10.128.8.101
+        validate_certs: no
+        state: present
