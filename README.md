@@ -27,4 +27,4 @@ It makes a few assumptions:
 
 A lot of these assumptions could be taken care of in a playbook, but I wanted this to be specific.
 
-This was tested with Ansible 2.12 base (Built with python 3.9.7) with ACI version 4.2(6h).
+This was tested with Ansible 2.12 core (Built with python 3.9.7) with ACI version 4.2(6h).
